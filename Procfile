@@ -1,1 +1,1 @@
-web: go-links
+web: go-links --addr $PORT
