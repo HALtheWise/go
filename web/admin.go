@@ -11,6 +11,8 @@ type adminHandler struct {
 }
 
 func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID()
+
 	p := parseName("/admin/", r.URL.Path)
 
 	if p == "" {
@@ -20,7 +22,7 @@ func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	if p == "dumps" {
 		if links, err := ctx.GetAll(); err != nil {
-			writeJSONBackendError(w, err)
+			writeJSONBackendError(w, err, tID)
 			return
 		} else {
 			writeJSON(w, links, http.StatusOK)
@@ -30,10 +32,11 @@ func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *adminHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID()
 	switch r.Method {
 	case "GET":
 		adminGet(h.ctx, w, r)
 	default:
-		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK, tID) // fix
 	}
 }

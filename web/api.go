@@ -3,7 +3,6 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
@@ -56,6 +55,8 @@ func validateURL(r *http.Request, s string) (string, error) {
 
 /*What if someone wants to edit an existing row by name? We need to check with ctx.Get() and then edit with a ctx.Edit() method*/
 func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID() //Transaction ID
+
 	name := parseName("/api/url/", r.URL.Path)
 	var req struct {
 		URL           string `json:"url"`
@@ -65,27 +66,27 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSONError(w, "invalid json", http.StatusBadRequest)
+		writeJSONError(w, "invalid json", http.StatusBadRequest, tID)
 		return
 	}
 
 	if req.URL == "" {
-		writeJSONError(w, "url required", http.StatusBadRequest)
+		writeJSONError(w, "url required", http.StatusBadRequest, tID)
 		return
 	}
 
 	if req.Uid == "" {
-		req.Uid = fmt.Sprint(randsource.Uint32())
+		req.Uid = context.GenerateRandomID()
 	}
 
 	if isBannedName(name) {
-		writeJSONError(w, "name cannot be used", http.StatusBadRequest)
+		writeJSONError(w, "name cannot be used", http.StatusBadRequest, tID)
 		return
 	}
 
 	reqURL, err := validateURL(r, req.URL)
 	if err != nil {
-		writeJSONError(w, err.Error(), http.StatusBadRequest)
+		writeJSONError(w, err.Error(), http.StatusBadRequest, tID)
 		return
 	}
 
@@ -94,7 +95,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		var err error
 		name, err = generateLink(ctx, req.Uid)
 		if err != nil {
-			writeJSONBackendError(w, err)
+			writeJSONBackendError(w, err, tID)
 			return
 		}
 
@@ -109,15 +110,15 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		ModifiedCount: req.ModifiedCount,
 	}
 
-	// If a row with the name already exists, ctx.Get won't return an error. We then call ctx.Edit() instead.
+	// If a row with the Uid already exists, ctx.Get won't return an error. We then call ctx.Edit() instead.
 	if _, err := ctx.GetUid(rt.Uid); err == nil {
 		if err := ctx.Edit(&rt, name); err != nil {
-			writeJSONBackendError(w, err)
+			writeJSONBackendError(w, err, tID)
 			return
 		}
 	} else {
 		if err := ctx.Put(name, &rt); err != nil {
-			writeJSONBackendError(w, err)
+			writeJSONBackendError(w, err, tID)
 			return
 		}
 	}
@@ -125,19 +126,21 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID() //Transaction ID
+
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
-		writeJSONError(w, "no name given", http.StatusBadRequest)
+		writeJSONError(w, "no name given", http.StatusBadRequest, tID)
 		return
 	}
 
 	rt, err := ctx.Get(p)
 	if err == sql.ErrNoRows {
-		writeJSONError(w, "Not Found", http.StatusNotFound)
+		writeJSONError(w, "Not Found", http.StatusNotFound, tID)
 		return
 	} else if err != nil {
-		writeJSONBackendError(w, err)
+		writeJSONBackendError(w, err, tID)
 		return
 	}
 
@@ -145,15 +148,17 @@ func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID() //Transaction ID
+
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
-		writeJSONError(w, "name required", http.StatusBadRequest)
+		writeJSONError(w, "name required", http.StatusBadRequest, tID)
 		return
 	}
 
 	if err := ctx.Del(p); err != nil {
-		writeJSONBackendError(w, err)
+		writeJSONBackendError(w, err, tID)
 		return
 	}
 
@@ -178,9 +183,11 @@ func parseBool(v string, def bool) (bool, error) {
 }
 
 func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID() //Transaction ID
+
 	ig, err := parseBool(r.FormValue("include-generated-names"), false)
 	if err != nil {
-		writeJSONError(w, "invalid include-generated-names value", http.StatusBadRequest)
+		writeJSONError(w, "invalid include-generated-names value", http.StatusBadRequest, tID)
 		return
 	}
 
@@ -190,7 +197,7 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	links, err := ctx.GetAll()
 	if err != nil {
-		writeJSONBackendError(w, err)
+		writeJSONBackendError(w, err, tID)
 	}
 
 	sortedNames := make([]string, 0, len(links))
@@ -216,6 +223,7 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID() //Transaction ID
 	switch r.Method {
 	case "POST":
 		apiURLPost(ctx, w, r)
@@ -224,16 +232,17 @@ func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		apiURLDelete(ctx, w, r)
 	default:
-		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK, tID) // fix
 	}
 }
 
 func apiURLs(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	tID := context.GenerateRandomID() //Transaction ID
 	switch r.Method {
 	case "GET":
 		apiURLsGet(ctx, w, r)
 	default:
-		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK, tID) // fix
 	}
 }
 

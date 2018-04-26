@@ -18,6 +18,10 @@ import (
 
 const TABLE_NAME = "linkdata"
 
+func GenerateRandomID() string {
+	return fmt.Sprint(rand.Uint32())
+}
+
 // Route is the value part of a shortcut.
 type Route struct {
 	URL           string    `json:"url"`

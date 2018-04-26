@@ -51,7 +51,8 @@ func writeJSONOk(w http.ResponseWriter) {
 }
 
 // Encode an error response and send it to the client.
-func writeJSONError(w http.ResponseWriter, err string, status int) {
+func writeJSONError(w http.ResponseWriter, err string, status int, tID string) {
+	log.Printf("Transaction ID %s: [error] %s", tID, err)
 	writeJSON(w, &msgErr{
 		Ok:    false,
 		Error: err,
@@ -59,9 +60,8 @@ func writeJSONError(w http.ResponseWriter, err string, status int) {
 }
 
 // Encode a generic backend error and send it to the client.
-func writeJSONBackendError(w http.ResponseWriter, err error) {
-	log.Printf("[error] %s", err)
-	writeJSONError(w, "backend error", http.StatusInternalServerError)
+func writeJSONBackendError(w http.ResponseWriter, err error, tID string) {
+	writeJSONError(w, "backend error", http.StatusInternalServerError, tID)
 }
 
 // Encode the given named route as a msg and send it to the client.
