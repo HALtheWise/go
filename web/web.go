@@ -46,7 +46,7 @@ func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) 
 func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	name := parseName("/", r.URL.Path)
 	if name == "" {
-		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "http://halthewise.github.io/olininfo", http.StatusTemporaryRedirect)
 		return
 	}
 
