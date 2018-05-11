@@ -3,6 +3,10 @@ go:
  - 1.x
  - master
 
+addons:
+  apt:
+    update: true
+
 services:
   - postgresql
 
@@ -24,7 +28,7 @@ before-install:
 install:
  - gem install sass
  - npm install -g typescript
- - sudo apt install closure-compiler
+ - sudo apt-get install closure-compiler
  - go get ./...
  - make
 
