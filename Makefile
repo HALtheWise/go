@@ -6,7 +6,7 @@ DST = $(patsubst %.scss,%.css,$(patsubst %.ts,%.js,$(subst web/assets,.build/ass
 ALL: web/bindata.go
 
 .build/bin/go-bindata:
-	GOPATH=$(shell pwd)/.build go get github.com/jteeuwen/go-bindata/...
+	GOPATH=$(shell pwd)/.build go get github.com/jteeuwen/go-bindata
 
 .build/assets:
 	mkdir -p $@
