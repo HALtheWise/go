@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/HALtheWise/o-links/_vendor-20180306154129/github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func normalizeName(name string) (string, error) {
